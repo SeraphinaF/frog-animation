@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <script src="https://unpkg.com/lottie-web@5.12.2/build/player/lottie.min.js"></script>
+
+    <title>Friday Night</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Six+Caps&family=Merriweather+Sans:wght@300;400&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Liu+Jian+Mao+Cao&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="main.css" />
+  </head>
+
+  <body>
+    <!-- ── loader ── -->
+    <div id="loader">
+      <svg width="120" height="200" viewBox="0 0 120 200" overflow="visible">
+        <defs>
+          <clipPath id="bowl-clip">
+            <polygon points="28,20 92,20 80,115 40,115" />
+          </clipPath>
+        </defs>
+        <polygon
+          points="28,20 92,20 80,115 40,115"
+          fill="#e8c0d4"
+          opacity="0.45"
+        />
+        <g clip-path="url(#bowl-clip)">
+          <path id="wine-wave" d="" fill="#b84070" />
+        </g>
+        <rect x="56" y="115" width="8" height="55" fill="#d49ab8" />
+        <rect x="34" y="168" width="52" height="10" rx="4" fill="#d49ab8" />
+      </svg>
+      <div class="loader-text">
+        Loading<span class="dot">.</span><span class="dot">.</span
+        ><span class="dot">.</span>
+      </div>
+    </div>
+
+    <div class="scene">
+      <div class="bg-title">Friday Night</div>
+
+      <div class="stage-plateau"></div>
+
+      <div class="frog-slot telephone">
+        <div id="frog-animation"></div>
+      </div>
+
+      <div class="buttons">
+        <div class="btn-wrap">
+          <div class="btn" id="btn-dial">
+            <div id="phone-animation"></div>
+          </div>
+          <span class="btn-label">Dial it up</span>
+        </div>
+
+        <div class="btn-wrap">
+          <div class="btn" id="btn-disco">
+            <div id="disco-animation"></div>
+          </div>
+          <span class="btn-label">Disco Mode</span>
+        </div>
+
+        <div class="btn-wrap">
+          <div class="btn" id="btn-chill">
+            <div id="tea-animation"></div>
+          </div>
+          <span class="btn-label">Chill Out</span>
+        </div>
+      </div>
+      <audio id="sound-dial" src="audio/dial.mp3"></audio>
+      <audio id="sound-disco" src="audio/disco.mp3"></audio>
+      <audio id="sound-chill" src="audio/chill.mp3"></audio>
+    </div>
+
+    <script>
+      const slot = document.querySelector(".frog-slot");
+      const container = document.getElementById("frog-animation");
+
+      let animation = null;
+
+      // SOUNDS
+      const dialSound = document.getElementById("sound-dial");
+      const discoSound = document.getElementById("sound-disco");
+      const chillSound = document.getElementById("sound-chill");
+
+      function setFrog(path, modeClass, loop = true) {
+        if (animation) animation.destroy();
+
+        animation = lottie.loadAnimation({
+          container: container,
+          renderer: "svg",
+          loop: loop,
+          autoplay: true,
+          path: path,
+        });
+
+        // if NOT looping → freeze on last frame
+        if (!loop) {
+          animation.addEventListener("complete", () => {
+            animation.goToAndStop(animation.totalFrames - 1, true);
+          });
+        }
+
+        slot.className = "frog-slot " + modeClass;
+      }
+
+      setFrog("animations/frog-telephone.json", "telephone", true);
+
+      document.getElementById("btn-dial").addEventListener("click", () => {
+        stopAllSounds();
+        dialSound.play();
+        setFrog("animations/frog-telephone.json", "telephone", true);
+      });
+
+      document.getElementById("btn-disco").addEventListener("click", () => {
+        stopAllSounds();
+        discoSound.play();
+        setFrog("animations/frog-dancing.json", "dancing", true);
+      });
+
+      document.getElementById("btn-chill").addEventListener("click", () => {
+        stopAllSounds();
+        chillSound.play();
+        setFrog("animations/frog-winding-down.json", "winding", false);
+      });
+
+      function stopAllSounds() {
+        [dialSound, discoSound, chillSound].forEach((sound) => {
+          sound.pause();
+          sound.currentTime = 0;
+        });
+      }
+
+      // TEA CUP (plays on hover)
+      function setupHoverAnimation(containerId, buttonId, path) {
+        const anim = lottie.loadAnimation({
+          container: document.getElementById(containerId),
+          renderer: "svg",
+          loop: true,
+          autoplay: false,
+          path: path,
+        });
+
+        const btn = document.getElementById(buttonId);
+
+        // freeze at first frame
+        anim.addEventListener("DOMLoaded", () => {
+          anim.goToAndStop(0, true);
+        });
+
+        // hover → loop first 3 seconds (0–90 frames)
+        btn.addEventListener("mouseenter", () => {
+          anim.playSegments([0, 60], true);
+        });
+
+        // leave → reset
+        btn.addEventListener("mouseleave", () => {
+          anim.stop();
+          anim.goToAndStop(0, true);
+        });
+      }
+
+      setupHoverAnimation(
+        "tea-animation",
+        "btn-chill",
+        "animations/tea-cup.json",
+      );
+
+      setupHoverAnimation(
+        "phone-animation",
+        "btn-dial",
+        "animations/telephone.json",
+      );
+
+      setupHoverAnimation(
+        "disco-animation",
+        "btn-disco",
+        "animations/discobal.json",
+      );
+
+      // ── wine loader ──
+      const wavePath = document.getElementById("wine-wave");
+      const loaderEl = document.getElementById("loader");
+
+      const BOWL_TOP = 20;
+      const BOWL_BOTTOM = 115;
+      const BOWL_HEIGHT = BOWL_BOTTOM - BOWL_TOP;
+      const FILL_SPEED = 0.004;
+      const DRAIN_SPEED = 0.012;
+      const SLOSH_SPEED = 2.8;
+      const MAX_TILT = 18;
+      const LOOPS_BEFORE_HIDE = 1; // hide loader after 2 full fill cycles
+
+      function bowlEdges(y) {
+        const t = (y - BOWL_TOP) / BOWL_HEIGHT;
+        return { left: 28 + t * 12, right: 92 - t * 12 };
+      }
+
+      function buildSloshPath(fill, tilt) {
+        const centerY = BOWL_BOTTOM - fill * BOWL_HEIGHT;
+        const leftY = Math.max(
+          BOWL_TOP + 1,
+          Math.min(BOWL_BOTTOM - 1, centerY + tilt),
+        );
+        const rightY = Math.max(
+          BOWL_TOP + 1,
+          Math.min(BOWL_BOTTOM - 1, centerY - tilt),
+        );
+        const { left: sl } = bowlEdges(leftY);
+        const { right: sr } = bowlEdges(rightY);
+        const { left: bl, right: br } = bowlEdges(BOWL_BOTTOM);
+        return `M ${bl} ${BOWL_BOTTOM} L ${sl} ${leftY} L ${sr} ${rightY} L ${br} ${BOWL_BOTTOM} Z`;
+      }
+
+      let fillLevel = 0;
+      let loaderTime = 0;
+      let lastTs = null;
+      let draining = false;
+      let loopCount = 0;
+      let loaderDone = false;
+
+      function animateLoader(ts) {
+        if (loaderDone) return;
+        if (!lastTs) lastTs = ts;
+        const dt = (ts - lastTs) / 500;
+        lastTs = ts;
+
+        loaderTime += dt;
+
+        if (!draining) {
+          fillLevel = Math.min(1, fillLevel + FILL_SPEED);
+          if (fillLevel >= 1) {
+            draining = true;
+          }
+        } else {
+          fillLevel = Math.max(0, fillLevel - DRAIN_SPEED);
+          if (fillLevel <= 0) {
+            draining = false;
+            loaderTime = 0;
+            loopCount++;
+            if (loopCount >= LOOPS_BEFORE_HIDE) {
+              loaderDone = true;
+              loaderEl.classList.add("hidden");
+              setTimeout(() => loaderEl.remove(), 700);
+              return;
+            }
+          }
+        }
+
+        const tilt =
+          Math.sin(loaderTime * SLOSH_SPEED) *
+          MAX_TILT *
+          Math.min(fillLevel * 4, 1);
+        wavePath.setAttribute("d", buildSloshPath(fillLevel, tilt));
+        requestAnimationFrame(animateLoader);
+      }
+
+      requestAnimationFrame(animateLoader);
+    </script>
+  </body>
+</html>
